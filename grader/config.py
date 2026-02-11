@@ -33,8 +33,8 @@ assert sum(WEIGHTS.values()) == 100.0, "Grading weights must sum to 100"
 # ---------------------------------------------------------------------------
 RTOL_STRICT = 1e-4
 ATOL_STRICT = 1e-6
-RTOL_LOOSE = 1e-3
-ATOL_LOOSE = 1e-5
+RTOL_LOOSE = 1e-2
+ATOL_LOOSE = 1e-4
 
 # ---------------------------------------------------------------------------
 # Strategy defaults

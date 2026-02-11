@@ -428,8 +428,8 @@ def test_calculate_performance(lookback_days: int) -> GradeResult:
 
         metrics = [
             ("annualized_return", 1.5),
-            ("annualized_volatility", 1.5),
-            ("sharpe_ratio", 1.5),
+            ("annualized_volatility", 2.5),
+            ("sharpe_ratio", 3.0),
         ]
         for key, pts in metrics:
             if key in student and key in expected:
