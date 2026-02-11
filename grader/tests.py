@@ -4,6 +4,7 @@ Individual test functions for each student-implemented function.
 Each test:
   - imports only the student function under test
   - feeds it *reference* inputs (so tests are independent)
+  - times student vs reference and enforces SLOWDOWN_FACTOR
   - awards partial credit based on output quality
 """
 
@@ -14,7 +15,13 @@ import pandas as pd
 
 from grader import reference as ref
 from grader.config import DATA_PATH, WEIGHTS, RTOL_LOOSE
-from grader.utils import GradeResult, df_close, series_close
+from grader.utils import (
+    GradeResult,
+    df_close,
+    series_close,
+    time_call,
+    check_speed,
+)
 
 
 # ── 1. read_data ───────────────────────────────────────────────
@@ -24,8 +31,11 @@ def test_read_data() -> GradeResult:
     try:
         from src.io import read_data
 
-        student = read_data(DATA_PATH)
-        expected = ref.read_data(DATA_PATH)
+        student, stu_t = time_call(read_data, DATA_PATH)
+        expected, ref_t = time_call(ref.read_data, DATA_PATH)
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -78,8 +88,12 @@ def test_calculate_returns() -> GradeResult:
         from src.returns import calculate_returns
 
         prices = ref.read_data(DATA_PATH)
-        student = calculate_returns(prices)
-        expected = ref.calculate_returns(prices)
+
+        student, stu_t = time_call(calculate_returns, prices)
+        expected, ref_t = time_call(ref.calculate_returns, prices)
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -127,12 +141,15 @@ def test_calculate_momentum(lookback_days: int) -> GradeResult:
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
 
-        student = calculate_momentum(
-            daily_returns, lookback_days=lookback_days
+        student, stu_t = time_call(
+            calculate_momentum, daily_returns, lookback_days=lookback_days
         )
-        expected = ref.calculate_momentum(
-            daily_returns, lookback_days=lookback_days
+        expected, ref_t = time_call(
+            ref.calculate_momentum, daily_returns, lookback_days=lookback_days
         )
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -192,8 +209,11 @@ def test_generate_signals(lookback_days: int) -> GradeResult:
             daily_returns, lookback_days=lookback_days
         )
 
-        student = generate_signals(momentum)
-        expected = ref.generate_signals(momentum)
+        student, stu_t = time_call(generate_signals, momentum)
+        expected, ref_t = time_call(ref.generate_signals, momentum)
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -226,7 +246,7 @@ def test_generate_signals(lookback_days: int) -> GradeResult:
 
 # ── 5. calculate_volatility ──────────────────────────────────
 
-def test_calculate_volatility() -> GradeResult:
+def test_calculate_volatility(lookback_days: int) -> GradeResult:
     gr = GradeResult("calculate_volatility", WEIGHTS["calculate_volatility"])
     try:
         from src.strategy import calculate_volatility
@@ -234,8 +254,15 @@ def test_calculate_volatility() -> GradeResult:
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
 
-        student = calculate_volatility(daily_returns, vol_lookback=252)
-        expected = ref.calculate_volatility(daily_returns, vol_lookback=252)
+        student, stu_t = time_call(
+            calculate_volatility, daily_returns, vol_lookback=lookback_days
+        )
+        expected, ref_t = time_call(
+            ref.calculate_volatility, daily_returns, vol_lookback=lookback_days
+        )
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -283,20 +310,27 @@ def test_calculate_strategy_returns(lookback_days: int) -> GradeResult:
             daily_returns, lookback_days=lookback_days
         )
         signals = ref.generate_signals(momentum)
-        volatility = ref.calculate_volatility(daily_returns)
+        volatility = ref.calculate_volatility(
+            daily_returns, vol_lookback=lookback_days
+        )
 
-        student = calculate_strategy_returns(
+        student, stu_t = time_call(
+            calculate_strategy_returns,
             signals=signals,
             daily_returns=daily_returns,
             volatility=volatility,
-            target_vol=0.40,
+            target_vol=0.10,
         )
-        expected = ref.calculate_strategy_returns(
+        expected, ref_t = time_call(
+            ref.calculate_strategy_returns,
             signals=signals,
             daily_returns=daily_returns,
             volatility=volatility,
-            target_vol=0.40,
+            target_vol=0.10,
         )
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -371,14 +405,19 @@ def test_calculate_performance(lookback_days: int) -> GradeResult:
             daily_returns, lookback_days=lookback_days
         )
         signals = ref.generate_signals(momentum)
-        volatility = ref.calculate_volatility(daily_returns)
+        volatility = ref.calculate_volatility(
+            daily_returns, vol_lookback=lookback_days
+        )
         strategy_rets = ref.calculate_strategy_returns(
             signals, daily_returns, volatility
         )
         tsmom = strategy_rets["TSMOM"]
-        expected = ref.calculate_performance(tsmom)
 
-        student = calculate_performance(tsmom)
+        student, stu_t = time_call(calculate_performance, tsmom)
+        expected, ref_t = time_call(ref.calculate_performance, tsmom)
+
+        if not check_speed(gr, ref_t, stu_t):
+            return gr
 
         if not isinstance(student, dict):
             gr.fail("Return type is not dict")
@@ -398,8 +437,8 @@ def test_calculate_performance(lookback_days: int) -> GradeResult:
 
         metrics = [
             ("annualized_return", 1.5),
-            ("annualized_volatility", 2.5),
-            ("sharpe_ratio", 3.0)
+            ("annualized_volatility", 1.5),
+            ("sharpe_ratio", 1.5),
         ]
         for key, pts in metrics:
             if key in student and key in expected:

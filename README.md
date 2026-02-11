@@ -1,9 +1,9 @@
-# hw1 Grader — Setup Guide
+# HW0 Grader — Instructor / TA Setup Guide
 
 ## Repository Structure
 
 ```
-hw1-grader/
+hw0-grader/
 ├── grade.py                 # CLI entry point (called by CI)
 ├── grader/
 │   ├── __init__.py
@@ -19,7 +19,7 @@ hw1-grader/
 
 ```
 ┌─────────────────────────────────┐
-│  hw1-template  (template repo)  │ ← GitHub Classroom template
+│  hw0-template  (template repo)  │ ← GitHub Classroom template
 │  - starter code with stubs      │
 │  - .github/workflows/           │
 │  - data/price_data.csv          │
@@ -27,13 +27,13 @@ hw1-grader/
                │  (GitHub Classroom creates per-student copies)
                ▼
 ┌─────────────────────────────────┐
-│  hw1-<student>  (student repo)  │ ← Students push here
+│  hw0-<student>  (student repo)  │ ← Students push here
 │  - same structure as template   │
 │  - workflow fetches grader ──────┼──┐
 └─────────────────────────────────┘  │
                                      │ (git clone using GRADER_PAT)
 ┌─────────────────────────────────┐  │
-│  hw1-grader   (PRIVATE repo)    │◄─┘
+│  hw0-grader   (PRIVATE repo)    │◄─┘
 │  - grade.py + grader/ package   │
 │  - reference implementations    │
 │  - This README                  │
@@ -46,14 +46,14 @@ hw1-grader/
 
 ```bash
 # In your GitHub organization:
-# Create a NEW PRIVATE repository called "hw1-grader"
+# Create a NEW PRIVATE repository called "hw0-grader"
 # Then push the full grader package:
 
-cd hw1-grader
+cd hw0-grader
 git init
 git add grade.py grader/ README.md
 git commit -m "Initial grader"
-git remote add origin https://github.com/<YOUR_ORG>/hw1-grader.git
+git remote add origin https://github.com/<YOUR_ORG>/hw0-grader.git
 git push -u origin main
 ```
 
@@ -64,10 +64,10 @@ git push -u origin main
 
 1. Go to **GitHub → Settings → Developer settings → Fine-grained
    personal access tokens → Generate new token**.
-2. Give it a descriptive name (e.g., `hw1-grader-readonly`).
+2. Give it a descriptive name (e.g., `hw0-grader-readonly`).
 3. Set **Resource owner** to your organization.
 4. Under **Repository access**, select **Only select repositories**
-   and choose `hw1-grader`.
+   and choose `hw0-grader`.
 5. Under **Permissions → Repository permissions**, set **Contents**
    to **Read-only**.
 6. Generate and **copy** the token.
@@ -81,21 +81,21 @@ git push -u origin main
 4. Value: paste the PAT from step 2.
 5. Under **Repository access**, select either:
    - **All repositories** (simplest), or
-   - **Selected repositories** and add all `hw1-*` student repos
+   - **Selected repositories** and add all `hw0-*` student repos
      (you may need to update this after the classroom assignment
      is created).
 
 ### 4. Create the Template Repository
 
 ```bash
-# Create a NEW PUBLIC (or internal) repository called "hw1-template"
+# Create a NEW PUBLIC (or internal) repository called "hw0-template"
 # Push the template code:
 
-cd hw1-template
+cd hw0-template
 git init
 git add .
-git commit -m "hw1 template"
-git remote add origin https://github.com/<YOUR_ORG>/hw1-template.git
+git commit -m "HW0 template"
+git remote add origin https://github.com/<YOUR_ORG>/hw0-template.git
 git push -u origin main
 ```
 
@@ -103,7 +103,7 @@ git push -u origin main
 
 1. Go to **GitHub Classroom** (classroom.github.com).
 2. Create a new **Individual Assignment**.
-3. Set the **template repository** to `<YOUR_ORG>/hw1-template`.
+3. Set the **template repository** to `<YOUR_ORG>/hw0-template`.
 4. Enable **auto-grading** if you want the built-in badge (optional;
    the workflow handles grading independently).
 5. Share the assignment link with students.
@@ -119,7 +119,7 @@ git push -u origin main
 
 If the workflow fails at the "Fetch grader" step, double-check that:
 - The `GRADER_PAT` secret is accessible to the student repo.
-- The PAT has read access to `hw1-grader`.
+- The PAT has read access to `hw0-grader`.
 - The repo name in the workflow matches your org name.
 
 ## Unique Look-back Parameters
@@ -129,7 +129,7 @@ days** (range: 21–252, roughly 1 month to 1 year) derived from a
 SHA-256 hash of their repository name:
 
 ```python
-slug = "hw1-johndoe"  # from GITHUB_REPOSITORY
+slug = "hw0-johndoe"  # from GITHUB_REPOSITORY
 h = int(hashlib.sha256(slug.encode()).hexdigest(), 16)
 lookback_days = (h % 232) + 21  # → integer in [21, 252]
 ```
@@ -142,7 +142,7 @@ in trading days, so they cannot hard-code answers.
 ```python
 import hashlib
 username = "johndoe"  # GitHub username
-slug = f"hw1-{username}"
+slug = f"hw0-{username}"
 h = int(hashlib.sha256(slug.encode()).hexdigest(), 16)
 print(f"{username}: lookback = {(h % 232) + 21} trading days")
 ```

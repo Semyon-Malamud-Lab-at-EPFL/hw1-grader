@@ -4,10 +4,13 @@ Grading utilities: result container and numerical comparison helpers.
 
 from __future__ import annotations
 
+import time
+from typing import Any, Callable
+
 import numpy as np
 import pandas as pd
 
-from grader.config import RTOL_LOOSE, ATOL_LOOSE
+from grader.config import RTOL_STRICT, ATOL_STRICT, SLOWDOWN_FACTOR
 
 
 # ---------------------------------------------------------------------------
@@ -58,6 +61,7 @@ class GradeResult:
             "name": self.name,
             "points": round(self.points, 2),
             "max_points": round(self.max_points, 2),
+            "messages": self.messages,
         }
 
 
@@ -68,8 +72,8 @@ class GradeResult:
 def df_close(
     student_df: pd.DataFrame,
     ref_df: pd.DataFrame,
-    rtol: float = RTOL_LOOSE,
-    atol: float = ATOL_LOOSE,
+    rtol: float = RTOL_STRICT,
+    atol: float = ATOL_STRICT,
 ) -> tuple[bool, float]:
     """Element-wise comparison of two DataFrames.
 
@@ -116,10 +120,57 @@ def df_close(
 def series_close(
     student_s: pd.Series,
     ref_s: pd.Series,
-    rtol: float = RTOL_LOOSE,
-    atol: float = ATOL_LOOSE,
+    rtol: float = RTOL_STRICT,
+    atol: float = ATOL_STRICT,
 ) -> tuple[bool, float]:
     """Convenience wrapper around :func:`df_close` for Series."""
     return df_close(
         student_s.to_frame(), ref_s.to_frame(), rtol=rtol, atol=atol
     )
+
+
+# ---------------------------------------------------------------------------
+# Timing helpers
+# ---------------------------------------------------------------------------
+
+# Reference functions that run in under this threshold (seconds) are
+# too fast to measure reliably on CI runners, so we skip the speed
+# check for those.
+_MIN_REF_TIME = 0.05
+
+
+def time_call(fn: Callable, *args: Any, **kwargs: Any) -> tuple[Any, float]:
+    """Call *fn* and return (result, elapsed_seconds)."""
+    start = time.perf_counter()
+    result = fn(*args, **kwargs)
+    elapsed = time.perf_counter() - start
+    return result, elapsed
+
+
+def check_speed(
+    gr: "GradeResult",
+    ref_seconds: float,
+    student_seconds: float,
+) -> bool:
+    """Compare student vs reference runtime.
+
+    If the student function exceeds SLOWDOWN_FACTOR × reference time,
+    the GradeResult is zeroed and a message is added.
+
+    Returns True if the check passes (or is skipped), False if failed.
+    """
+    if SLOWDOWN_FACTOR <= 0:
+        return True  # disabled
+
+    if ref_seconds < _MIN_REF_TIME:
+        return True  # too fast to measure reliably
+
+    ratio = student_seconds / ref_seconds
+    if ratio > SLOWDOWN_FACTOR:
+        gr.fail(
+            f"Too slow: your code took {student_seconds:.3f}s, "
+            f"reference took {ref_seconds:.3f}s "
+            f"({ratio:.1f}× slower, limit is {SLOWDOWN_FACTOR}×)"
+        )
+        return False
+    return True

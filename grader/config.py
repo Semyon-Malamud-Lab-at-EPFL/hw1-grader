@@ -1,5 +1,5 @@
 """
-Configuration and constants for the HW1 autograder.
+Configuration and constants for the HW0 autograder.
 
 Handles student-specific parameter derivation and shared constants
 used across the grading pipeline.
@@ -37,17 +37,26 @@ RTOL_LOOSE = 1e-3
 ATOL_LOOSE = 1e-5
 
 # ---------------------------------------------------------------------------
-# Defaults
+# Strategy defaults
 # ---------------------------------------------------------------------------
+VOL_LOOKBACK_DAYS = 252
 TARGET_VOL = 0.10
 TRADING_DAYS_PER_YEAR = 252
 
 # ---------------------------------------------------------------------------
+# Performance threshold
+# ---------------------------------------------------------------------------
+# If a student's function takes longer than SLOWDOWN_FACTOR × the
+# reference implementation, the function receives zero credit.
+# Set to 0 to disable the check.
+SLOWDOWN_FACTOR = 3
+
+# ---------------------------------------------------------------------------
 # Student parameter derivation
 # ---------------------------------------------------------------------------
-LOOKBACK_MIN = 100   
-LOOKBACK_MAX = 252  
-LOOKBACK_RANGE = LOOKBACK_MAX - LOOKBACK_MIN + 1  
+LOOKBACK_MIN = 21   # ~1 month of trading days
+LOOKBACK_MAX = 252  # ~1 year of trading days
+LOOKBACK_RANGE = LOOKBACK_MAX - LOOKBACK_MIN + 1  # 232
 
 
 def get_student_lookback() -> int:
@@ -60,10 +69,9 @@ def get_student_lookback() -> int:
     Returns
     -------
     int
-        An integer in [LOOKBACK_MIN, LOOKBACK_MAX]
+        An integer in [LOOKBACK_MIN, LOOKBACK_MAX] (i.e. [21, 252]).
     """
     repo = os.environ.get("GITHUB_REPOSITORY", "")
-    slug = repo.split("/")[-1]  # e.g. "hw0-demirayonur"
+    slug = repo.split("/")[-1]  # e.g. "hw0-johndoe"
     h = int(hashlib.sha256(slug.encode()).hexdigest(), 16)
     return (h % LOOKBACK_RANGE) + LOOKBACK_MIN
-

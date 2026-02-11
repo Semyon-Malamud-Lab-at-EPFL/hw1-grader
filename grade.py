@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-HW1 Autograder — Entry Point
+HW0 Autograder — Entry Point
 =============================
 
 Usage (called by the GitHub Actions workflow):

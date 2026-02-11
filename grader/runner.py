@@ -20,7 +20,7 @@ def run_all() -> list[GradeResult]:
         tests.test_calculate_returns(),
         tests.test_calculate_momentum(lookback),
         tests.test_generate_signals(lookback),
-        tests.test_calculate_volatility(),
+        tests.test_calculate_volatility(lookback),
         tests.test_calculate_strategy_returns(lookback),
         tests.test_calculate_performance(lookback),
     ]
@@ -29,7 +29,7 @@ def run_all() -> list[GradeResult]:
 def print_report(results: list[GradeResult], lookback: int) -> None:
     """Pretty-print the grading report to stdout."""
     print("=" * 60)
-    print("  HW1 Autograder — Time Series Momentum Strategy")
+    print("  HW0 Autograder — Time Series Momentum Strategy")
     print(f"  Student look-back period: {lookback} trading days")
     print("=" * 60)
     print()
