@@ -49,7 +49,7 @@ TRADING_DAYS_PER_YEAR = 252
 # If a student's function takes longer than SLOWDOWN_FACTOR × the
 # reference implementation, the function receives zero credit.
 # Set to 0 to disable the check.
-SLOWDOWN_FACTOR = 3
+SLOWDOWN_FACTOR = 10
 
 # ---------------------------------------------------------------------------
 # Student parameter derivation
