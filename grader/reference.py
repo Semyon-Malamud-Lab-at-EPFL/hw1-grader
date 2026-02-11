@@ -14,9 +14,8 @@ from grader.config import TARGET_VOL, TRADING_DAYS_PER_YEAR
 # ── io.py ──────────────────────────────────────────────────────
 
 def read_data(filepath: str) -> pd.DataFrame:
-    df = pd.read_csv(filepath, parse_dates=["Date"], index_col="Date")
-    for col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce")
+    df = pd.read_csv(filepath, parse_dates=["Date"], index_col="Date",
+                     date_format="%m/%d/%y")
     return df
 
 
@@ -78,9 +77,7 @@ def calculate_performance(daily_returns: pd.Series) -> dict:
     ann_ret = r.mean() * TRADING_DAYS_PER_YEAR
     ann_vol = r.std() * np.sqrt(TRADING_DAYS_PER_YEAR)
     sharpe = ann_ret / ann_vol if ann_vol != 0 else 0.0
-    wealth = (1 + r).cumprod()
-    peak = wealth.cummax()
-    dd = (wealth - peak) / peak
+
     return {
         "annualized_return": ann_ret,
         "annualized_volatility": ann_vol,
