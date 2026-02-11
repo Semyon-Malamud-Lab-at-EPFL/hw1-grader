@@ -31,12 +31,11 @@ def calculate_returns(prices: pd.DataFrame) -> pd.DataFrame:
 def calculate_momentum(
     daily_returns: pd.DataFrame, lookback_days: int
 ) -> pd.DataFrame:
-    return (
-        (1 + daily_returns)
-        .shift(1)
-        .rolling(window=lookback_days)
-        .apply(lambda w: w.prod() - 1, raw=False)
-    )
+
+    cum = (1 + daily_returns).cumprod()
+    shifted = cum.shift(1)
+    lagged = cum.shift(lookback_days + 1)
+    return shifted / lagged - 1
 
 
 # ── signals.py ─────────────────────────────────────────────────
@@ -85,7 +84,5 @@ def calculate_performance(daily_returns: pd.Series) -> dict:
     return {
         "annualized_return": ann_ret,
         "annualized_volatility": ann_vol,
-        "sharpe_ratio": sharpe,
-        "max_drawdown": dd.min(),
-        "cumulative_return": wealth.iloc[-1] - 1,
+        "sharpe_ratio": sharpe
     }
