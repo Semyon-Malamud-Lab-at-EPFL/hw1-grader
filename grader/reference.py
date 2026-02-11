@@ -31,10 +31,12 @@ def calculate_returns(prices: pd.DataFrame) -> pd.DataFrame:
 def calculate_momentum(
     daily_returns: pd.DataFrame, lookback_days: int
 ) -> pd.DataFrame:
-    cum = (1 + daily_returns).cumprod()
-    shifted = cum.shift(1)
-    lagged = cum.shift(lookback_days + 1)
-    return shifted / lagged - 1
+    return (
+        (1 + daily_returns)
+        .shift(1)
+        .rolling(window=lookback_days)
+        .apply(lambda w: w.prod() - 1, raw=False)
+    )
 
 
 # ── signals.py ─────────────────────────────────────────────────
