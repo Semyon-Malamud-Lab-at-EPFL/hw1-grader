@@ -3,8 +3,8 @@ Individual test functions for each student-implemented function.
 
 Each test:
   - imports only the student function under test
+  - checks the source code for forbidden loops (for/while)
   - feeds it *reference* inputs (so tests are independent)
-  - times student vs reference and enforces SLOWDOWN_FACTOR
   - awards partial credit based on output quality
 """
 
@@ -15,13 +15,7 @@ import pandas as pd
 
 from grader import reference as ref
 from grader.config import DATA_PATH, WEIGHTS, RTOL_LOOSE
-from grader.utils import (
-    GradeResult,
-    df_close,
-    series_close,
-    time_call,
-    check_speed,
-)
+from grader.utils import GradeResult, df_close, series_close, check_no_loops
 
 
 # ── 1. read_data ───────────────────────────────────────────────
@@ -31,11 +25,11 @@ def test_read_data() -> GradeResult:
     try:
         from src.io import read_data
 
-        student, stu_t = time_call(read_data, DATA_PATH)
-        expected, ref_t = time_call(ref.read_data, DATA_PATH)
-
-        if not check_speed(gr, ref_t, stu_t):
+        if not check_no_loops(gr, read_data):
             return gr
+
+        student = read_data(DATA_PATH)
+        expected = ref.read_data(DATA_PATH)
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -87,13 +81,12 @@ def test_calculate_returns() -> GradeResult:
     try:
         from src.returns import calculate_returns
 
-        prices = ref.read_data(DATA_PATH)
-
-        student, stu_t = time_call(calculate_returns, prices)
-        expected, ref_t = time_call(ref.calculate_returns, prices)
-
-        if not check_speed(gr, ref_t, stu_t):
+        if not check_no_loops(gr, calculate_returns):
             return gr
+
+        prices = ref.read_data(DATA_PATH)
+        student = calculate_returns(prices)
+        expected = ref.calculate_returns(prices)
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -138,18 +131,18 @@ def test_calculate_momentum(lookback_days: int) -> GradeResult:
     try:
         from src.momentum import calculate_momentum
 
+        if not check_no_loops(gr, calculate_momentum):
+            return gr
+
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
 
-        student, stu_t = time_call(
-            calculate_momentum, daily_returns, lookback_days=lookback_days
+        student = calculate_momentum(
+            daily_returns, lookback_days=lookback_days
         )
-        expected, ref_t = time_call(
-            ref.calculate_momentum, daily_returns, lookback_days=lookback_days
+        expected = ref.calculate_momentum(
+            daily_returns, lookback_days=lookback_days
         )
-
-        if not check_speed(gr, ref_t, stu_t):
-            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -203,17 +196,17 @@ def test_generate_signals(lookback_days: int) -> GradeResult:
     try:
         from src.signals import generate_signals
 
+        if not check_no_loops(gr, generate_signals):
+            return gr
+
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
         momentum = ref.calculate_momentum(
             daily_returns, lookback_days=lookback_days
         )
 
-        student, stu_t = time_call(generate_signals, momentum)
-        expected, ref_t = time_call(ref.generate_signals, momentum)
-
-        if not check_speed(gr, ref_t, stu_t):
-            return gr
+        student = generate_signals(momentum)
+        expected = ref.generate_signals(momentum)
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -251,18 +244,18 @@ def test_calculate_volatility(lookback_days: int) -> GradeResult:
     try:
         from src.strategy import calculate_volatility
 
+        if not check_no_loops(gr, calculate_volatility):
+            return gr
+
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
 
-        student, stu_t = time_call(
-            calculate_volatility, daily_returns, vol_lookback=lookback_days
+        student = calculate_volatility(
+            daily_returns, vol_lookback=lookback_days
         )
-        expected, ref_t = time_call(
-            ref.calculate_volatility, daily_returns, vol_lookback=lookback_days
+        expected = ref.calculate_volatility(
+            daily_returns, vol_lookback=lookback_days
         )
-
-        if not check_speed(gr, ref_t, stu_t):
-            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -304,6 +297,9 @@ def test_calculate_strategy_returns(lookback_days: int) -> GradeResult:
     try:
         from src.strategy import calculate_strategy_returns
 
+        if not check_no_loops(gr, calculate_strategy_returns):
+            return gr
+
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
         momentum = ref.calculate_momentum(
@@ -314,23 +310,18 @@ def test_calculate_strategy_returns(lookback_days: int) -> GradeResult:
             daily_returns, vol_lookback=lookback_days
         )
 
-        student, stu_t = time_call(
-            calculate_strategy_returns,
+        student = calculate_strategy_returns(
             signals=signals,
             daily_returns=daily_returns,
             volatility=volatility,
             target_vol=0.10,
         )
-        expected, ref_t = time_call(
-            ref.calculate_strategy_returns,
+        expected = ref.calculate_strategy_returns(
             signals=signals,
             daily_returns=daily_returns,
             volatility=volatility,
             target_vol=0.10,
         )
-
-        if not check_speed(gr, ref_t, stu_t):
-            return gr
 
         if not isinstance(student, pd.DataFrame):
             gr.fail("Return type is not pd.DataFrame")
@@ -398,6 +389,9 @@ def test_calculate_performance(lookback_days: int) -> GradeResult:
     try:
         from src.performance import calculate_performance
 
+        if not check_no_loops(gr, calculate_performance):
+            return gr
+
         # Build full reference pipeline to get TSMOM series
         prices = ref.read_data(DATA_PATH)
         daily_returns = ref.calculate_returns(prices)
@@ -412,12 +406,9 @@ def test_calculate_performance(lookback_days: int) -> GradeResult:
             signals, daily_returns, volatility
         )
         tsmom = strategy_rets["TSMOM"]
+        expected = ref.calculate_performance(tsmom)
 
-        student, stu_t = time_call(calculate_performance, tsmom)
-        expected, ref_t = time_call(ref.calculate_performance, tsmom)
-
-        if not check_speed(gr, ref_t, stu_t):
-            return gr
+        student = calculate_performance(tsmom)
 
         if not isinstance(student, dict):
             gr.fail("Return type is not dict")

@@ -44,12 +44,11 @@ TARGET_VOL = 0.10
 TRADING_DAYS_PER_YEAR = 252
 
 # ---------------------------------------------------------------------------
-# Performance threshold
+# Loop detection
 # ---------------------------------------------------------------------------
-# If a student's function takes longer than SLOWDOWN_FACTOR × the
-# reference implementation, the function receives zero credit.
-# Set to 0 to disable the check.
-SLOWDOWN_FACTOR = 10
+# If True, any function containing a for/while loop receives zero credit.
+# Set to False to disable the check.
+PENALIZE_LOOPS = True
 
 # ---------------------------------------------------------------------------
 # Student parameter derivation

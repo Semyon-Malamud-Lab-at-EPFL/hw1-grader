@@ -1,16 +1,17 @@
 """
-Grading utilities: result container and numerical comparison helpers.
+Grading utilities: result container, numerical comparison, and loop detection.
 """
 
 from __future__ import annotations
 
-import time
-from typing import Any, Callable
+import ast
+import inspect
+import textwrap
 
 import numpy as np
 import pandas as pd
 
-from grader.config import RTOL_STRICT, ATOL_STRICT, SLOWDOWN_FACTOR
+from grader.config import RTOL_STRICT, ATOL_STRICT, PENALIZE_LOOPS
 
 
 # ---------------------------------------------------------------------------
@@ -130,47 +131,56 @@ def series_close(
 
 
 # ---------------------------------------------------------------------------
-# Timing helpers
+# Loop detection (AST-based)
 # ---------------------------------------------------------------------------
 
-# Reference functions that run in under this threshold (seconds) are
-# too fast to measure reliably on CI runners, so we skip the speed
-# check for those.
-_MIN_REF_TIME = 0.05
+class _LoopFinder(ast.NodeVisitor):
+    """AST visitor that collects ``for`` and ``while`` loop locations."""
+
+    def __init__(self) -> None:
+        self.loops: list[tuple[str, int]] = []  # (type, line_number)
+
+    def visit_For(self, node: ast.For) -> None:
+        self.loops.append(("for", node.lineno))
+        self.generic_visit(node)
+
+    def visit_While(self, node: ast.While) -> None:
+        self.loops.append(("while", node.lineno))
+        self.generic_visit(node)
 
 
-def time_call(fn: Callable, *args: Any, **kwargs: Any) -> tuple[Any, float]:
-    """Call *fn* and return (result, elapsed_seconds)."""
-    start = time.perf_counter()
-    result = fn(*args, **kwargs)
-    elapsed = time.perf_counter() - start
-    return result, elapsed
+def check_no_loops(gr: GradeResult, fn: object) -> bool:
+    """Inspect the source code of *fn* for ``for``/``while`` loops.
 
+    If PENALIZE_LOOPS is False (disabled), always returns True.
 
-def check_speed(
-    gr: "GradeResult",
-    ref_seconds: float,
-    student_seconds: float,
-) -> bool:
-    """Compare student vs reference runtime.
+    If loops are found, zeros the GradeResult and adds a diagnostic
+    message listing each loop location.
 
-    If the student function exceeds SLOWDOWN_FACTOR × reference time,
-    the GradeResult is zeroed and a message is added.
-
-    Returns True if the check passes (or is skipped), False if failed.
+    Returns True if no loops found (or check disabled), False otherwise.
     """
-    if SLOWDOWN_FACTOR <= 0:
-        return True  # disabled
+    if not PENALIZE_LOOPS:
+        return True
 
-    if ref_seconds < _MIN_REF_TIME:
-        return True  # too fast to measure reliably
+    try:
+        source = inspect.getsource(fn)
+        source = textwrap.dedent(source)
+        tree = ast.parse(source)
+    except (OSError, TypeError, SyntaxError):
+        # If we can't read the source, skip the check gracefully
+        return True
 
-    ratio = student_seconds / ref_seconds
-    if ratio > SLOWDOWN_FACTOR:
+    finder = _LoopFinder()
+    finder.visit(tree)
+
+    if finder.loops:
+        loop_desc = ", ".join(
+            f"{kind} loop on line {line}" for kind, line in finder.loops
+        )
         gr.fail(
-            f"Too slow: your code took {student_seconds:.3f}s, "
-            f"reference took {ref_seconds:.3f}s "
-            f"({ratio:.1f}× slower, limit is {SLOWDOWN_FACTOR}×)"
+            f"Explicit loops are not allowed (vectorize with "
+            f"pandas/numpy). Found: {loop_desc}"
         )
         return False
+
     return True
