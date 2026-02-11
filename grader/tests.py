@@ -162,9 +162,9 @@ def test_calculate_momentum(lookback_days: int) -> GradeResult:
         try:
             stu_first = student.first_valid_index()
             if ref_first == stu_first:
-                gr.award(2.0, "NaN pattern correct")
+                gr.award(0.0, "NaN pattern correct")
             elif stu_first is not None:
-                gr.award(1.0, "Some NaN handling (start index differs)")
+                gr.award(0.0, "Some NaN handling (start index differs)")
             else:
                 gr.deduct("All values are NaN")
         except Exception:
@@ -172,7 +172,7 @@ def test_calculate_momentum(lookback_days: int) -> GradeResult:
 
         ok, frac = df_close(student, expected, rtol=RTOL_LOOSE)
         if ok:
-            gr.award(13.0, "All values correct")
+            gr.award(16.0, "All values correct")
         elif frac > 0.9:
             gr.award(10.0, f"Most values correct ({frac:.1%})")
         elif frac > 0.7:
